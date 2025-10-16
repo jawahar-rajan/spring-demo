@@ -1,0 +1,69 @@
+pipeline {
+    agent any
+
+    tools {
+        jdk 'JDK17'      // Use the JDK name you configured in "Global Tool Configuration"
+        maven 'Maven3'   // Use the Maven name you configured
+    }
+    environment{
+        BUILD_DIR = 'target'
+        DEPLOY_ENV ='C:\\Jawahar\\learning_materials\\Files'
+        ENV='test1'
+    }
+
+    stages {
+        stage('Check Java Version') {
+            when{
+                expression{
+                    ENV=='test'
+                }
+            }
+            steps {
+                echo 'Java version used is' //multiple steps in stage
+                bat 'java -version'
+            }
+        }
+
+        stage('Check Maven Version') {
+            steps {
+                bat 'mvn -version'
+            }
+        }
+
+        stage('Check Git Version') {
+            steps {
+                bat 'git --version'
+            }
+        }
+        stage('pull the code'){
+            steps{
+                git branch: 'main', credentialsId: 'github', url: 'https://github.com/jawahar-rajan/spring-demo.git'
+            }
+        }
+        stage('maven test'){
+            steps{
+                bat 'mvn test'
+            }
+        }
+        stage('maven clean install'){
+            steps{
+                bat 'mvn clean install'
+            }
+        }
+        stage('deployment'){
+            steps{
+                bat "if not exist \"%DEPLOY_ENV%\" mkdir \"%DEPLOY_ENV%\""
+                // Copy the generated JAR file from target to deploy directory
+                bat "copy /Y \"%BUILD_DIR%\\*.jar\" \"%DEPLOY_ENV%\""
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Build and deployment completed successfully!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}
